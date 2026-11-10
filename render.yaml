@@ -1,10 +1,10 @@
-services:
-  - type: pserv
-    name: orcamento-db
-    plan: basic-256mb
+databases:
+  - name: orcamento-db
     databaseName: orcamento
     user: orcamento
+    plan: basic-256mb
 
+services:
   - type: web
     name: orcamento-ia-voz
     runtime: docker
