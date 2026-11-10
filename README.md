@@ -1,45 +1,132 @@
 # Orçamento IA por voz
 
-API de orçamento pessoal em Java 17, Spring Boot e Spring AI. Usuários podem criar uma conta, obter um JWT e enviar comandos por texto ou áudio. O assistente pode chamar ferramentas financeiras reais; cada usuário só consulta e modifica as próprias transações.
+API de orçamento pessoal desenvolvida com Java 17, Spring Boot e Spring AI. A aplicação permite que cada usuário crie uma conta, faça login com JWT, registre transações financeiras e use um assistente de IA para interpretar comandos por texto ou áudio.
 
-## Evolução desta rodada
+O objetivo principal do projeto é demonstrar como conectar uma API real com um modelo de linguagem, respeitando responsabilidades do código, regras de negócio e segurança. Em vez de deixar tudo no controller, a aplicação separa autenticação, domínio, serviços e integração com IA.
 
-- **JWT e usuários:** registro/login com senhas BCrypt e tokens Bearer assinados; as transações são isoladas por usuário.
-- **PostgreSQL:** banco padrão da aplicação; H2 fica apenas nos testes.
-- **Fluxo integrado de ponta a ponta:** testes exercitam registro, autenticação, autorização, criação de transação, resumo e isolamento entre usuários usando o pipeline HTTP do Spring.
-- **Docker:** Dockerfile multi-stage, Compose com PostgreSQL e blueprint opcional de deploy Render.
-- **Assistente mais natural e seguro:** prompt em português do Brasil, pede dados ausentes e evita afirmar que salvou algo sem retorno positivo da ferramenta.
+## O que o projeto faz
 
-## Tecnologias
+- Cria usuários e autentica com JWT
+- Permite registrar receitas e despesas
+- Calcula resumo financeiro por usuário
+- Permite consultar transações por tipo
+- Recebe comandos em texto e interpreta intenção do usuário
+- Aceita áudio para transcrição e processa comando
+- Gera resposta em áudio a partir de texto
+- Usa tool calling para executar ações reais da aplicação
+- Mantém cada usuário isolado das transações de outros usuários
 
-Java 17 · Spring Boot 3.4 · Spring AI 1.0 · OpenAI · Spring Security OAuth2 Resource Server · JWT HMAC SHA-256 · BCrypt · Spring Data JPA · PostgreSQL · H2 para testes · Maven · Docker.
+## Melhorias implementadas nesta versão
+
+- Autenticação JWT com Spring Security e BCrypt
+- Isolamento por usuário: cada pessoa vê apenas suas próprias transações
+- PostgreSQL como banco principal em ambiente real
+- Docker e Docker Compose para subir a aplicação com banco e ambiente local
+- Testes E2E cobrindo cadastro, login, token, validação e separação por usuário
+- Prompt do assistente mais natural e mais seguro
+- Endpoints REST mais completos para gestão de transações e integração com IA
+
+## Tecnologias utilizadas
+
+- Java 17
+- Spring Boot 3.4
+- Spring AI 1.0
+- OpenAI API
+- Spring Security
+- OAuth2 Resource Server
+- JWT (HMAC SHA-256)
+- BCrypt
+- Spring Data JPA
+- PostgreSQL
+- H2 para testes
+- Maven
+- Docker / Docker Compose
+
+## Estrutura do projeto
+
+```text
+src/main/java/com/example/orcamentoia/
+├── controller/
+│   ├── AuthController.java
+│   ├── AssistantController.java
+│   ├── TransactionController.java
+│   └── ApiExceptionHandler.java
+├── dto/
+│   ├── AuthResponse.java
+│   ├── LoginRequest.java
+│   ├── RegisterRequest.java
+│   ├── CreateTransactionRequest.java
+│   ├── AssistantCommandRequest.java
+│   ├── AssistantResponse.java
+│   └── FinancialSummary.java
+├── model/
+│   ├── AppUser.java
+│   ├── Transaction.java
+│   └── TransactionType.java
+├── repository/
+│   ├── AppUserRepository.java
+│   └── TransactionRepository.java
+├── security/
+│   ├── SecurityConfig.java
+│   ├── AppUserDetailsService.java
+│   └── ApiKeyFilter.java
+├── service/
+│   ├── AuthService.java
+│   ├── BudgetTools.java
+│   ├── OpenAiAudioService.java
+│   ├── TransactionService.java
+│   ├── VoiceAssistantService.java
+│   ├── TransactionNotFoundException.java
+│   └── UsernameAlreadyExistsException.java
+├── BudgetAiApplication.java
+└──
+```
+
+## Pré-requisitos
+
+- JDK 17+
+- Maven 3.9+
+- Docker e Docker Compose (opcional, para execução local com banco e app)
+- PostgreSQL local ou via Docker
+- Chave OpenAI para usar IA e áudio (`OPENAI_API_KEY`)
 
 ## Executar com Docker Compose
 
-Pré-requisitos: Docker e Docker Compose. O modelo OpenAI é necessário para comandos de IA e recursos de áudio; as rotas convencionais de transações e autenticação funcionam sem ele.
+A maneira mais simples é usar o ambiente pronto com banco e aplicação em um único comando.
 
 ```bash
 cp .env.example .env
-# Edite .env e informe OPENAI_API_KEY se for usar IA/áudio
+# edite o valor de OPENAI_API_KEY no arquivo .env
+
 docker compose up --build
 ```
 
-A API fica em `http://localhost:8080`, o PostgreSQL persiste no volume `postgres_data`. O Compose usa credenciais exclusivamente locais de desenvolvimento; não reutilize esses valores em produção.
+A aplicação fica em:
+- http://localhost:8080
+
+O PostgreSQL fica em:
+- host: localhost
+- porta: 5432
+- banco: orcamento
+- usuário: orcamento
+- senha: orcamento
 
 ## Executar com Maven
 
-É necessário ter PostgreSQL disponível. Defina as variáveis de ambiente:
+Se quiser rodar localmente sem Docker, primeiro configure as variáveis de ambiente.
+
+Linux/macOS:
 
 ```bash
 export JDBC_DATABASE_URL=jdbc:postgresql://localhost:5432/orcamento
 export DB_USERNAME=orcamento
 export DB_PASSWORD=orcamento
 export JWT_SECRET='substitua-por-uma-chave-secreta-com-pelo-menos-32-bytes'
-export OPENAI_API_KEY='sua-chave-openai' # opcional para executar API sem IA
+export OPENAI_API_KEY='sua-chave-openai'
 mvn spring-boot:run
 ```
 
-No PowerShell:
+Windows PowerShell:
 
 ```powershell
 $env:JDBC_DATABASE_URL = "jdbc:postgresql://localhost:5432/orcamento"
@@ -50,13 +137,59 @@ $env:OPENAI_API_KEY = "sua-chave-openai"
 mvn spring-boot:run
 ```
 
-O secret JWT precisa ter pelo menos 32 bytes. Configure um valor aleatório diferente para cada ambiente e mantenha-o fora do código. Para escolher o modelo do chat, use `OPENAI_MODEL` (padrão `gpt-4o-mini`).
+Observações importantes:
+- `JWT_SECRET` precisa ter pelo menos 32 bytes
+- `OPENAI_API_KEY` é obrigatório para uso de IA e áudio
+- `OPENAI_MODEL` pode ser configurado se quiser trocar o modelo padrão (`gpt-4o-mini`)
 
-## Autenticação e exemplos
+## Fluxo principal da API
 
-### Registrar usuário
+1. Usuário cria conta ou faz login
+2. Recebe um JWT Bearer
+3. Usa esse token nas rotas protegidas
+4. Envia comando por texto ou áudio
+5. O assistente interpreta a intenção
+6. O Spring AI chama as ferramentas da aplicação
+7. A aplicação valida e persiste a transação
+8. A API responde com texto, resumo ou geração de áudio
 
-A senha deve ter entre 12 e 72 caracteres. A resposta contém `accessToken` e validade em segundos.
+## Endpoints
+
+Todos os endpoints abaixo, exceto registro e login, exigem token JWT no cabeçalho:
+
+```http
+Authorization: Bearer <token>
+```
+
+### Autenticação
+
+| Método | Rota | Descrição |
+|---|---|---|
+| POST | `/api/auth/register` | Cria usuário e retorna JWT |
+| POST | `/api/auth/login` | Faz login e retorna JWT |
+
+### Transações
+
+| Método | Rota | Descrição |
+|---|---|---|
+| POST | `/api/transactions` | Cria uma transação |
+| GET | `/api/transactions` | Lista transações do usuário |
+| GET | `/api/transactions?type=EXPENSE` | Lista por tipo |
+| GET | `/api/transactions/{id}` | Busca uma transação |
+| DELETE | `/api/transactions/{id}` | Remove uma transação |
+| GET | `/api/transactions/summary` | Resumo financeiro do usuário |
+
+### Assistente IA
+
+| Método | Rota | Descrição |
+|---|---|---|
+| POST | `/api/assistant/command` | Recebe texto e responde com IA |
+| POST | `/api/assistant/audio` | Recebe áudio, transcreve e processa comando |
+| POST | `/api/assistant/speak` | Gera áudio a partir de texto |
+
+## Exemplos de uso
+
+### 1) Registrar usuário
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/register \
@@ -64,92 +197,134 @@ curl -X POST http://localhost:8080/api/auth/register \
   -d '{"username":"ana","password":"uma-senha-segura-123"}'
 ```
 
-No login, use o mesmo formato e guarde o `accessToken` da resposta:
+Resposta esperada:
+
+```json
+{
+  "accessToken": "eyJ...",
+  "tokenType": "Bearer",
+  "expiresIn": 3600
+}
+```
+
+### 2) Fazer login
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"ana","password":"uma-senha-segura-123"}'
-export TOKEN='cole-o-accessToken-aqui'
 ```
 
-Envie o token nas rotas protegidas usando `Authorization: Bearer <token>`.
-
-### Criar transação e consultar resumo
+### 3) Criar transação
 
 ```bash
+export TOKEN='cole_o_token_aqui'
+
 curl -X POST http://localhost:8080/api/transactions \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"description":"Mercado","amount":42.50,"type":"EXPENSE","category":"Alimentação"}'
+  -d '{
+    "description": "Mercado",
+    "amount": 42.50,
+    "type": "EXPENSE",
+    "category": "Alimentação"
+  }'
+```
 
-curl 'http://localhost:8080/api/transactions?type=EXPENSE' \
-  -H "Authorization: Bearer $TOKEN"
+### 4) Consultar resumo financeiro
+
+```bash
 curl http://localhost:8080/api/transactions/summary \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### Pedir ao assistente para registrar ou consultar
+### 5) Enviar comando textual para o assistente
 
 ```bash
 curl -X POST http://localhost:8080/api/assistant/command \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"text":"Registre uma despesa de 18 reais com café na categoria alimentação"}'
+  -d '{"text":"registre uma despesa de 18 reais com café na categoria alimentação"}'
 ```
 
-O modelo escolhe se precisa chamar as ferramentas. Se faltar uma informação essencial, deve pedir esclarecimento sem gravar uma transação incompleta.
-
-### Comando e resposta por áudio
+### 6) Enviar áudio
 
 ```bash
 curl -X POST http://localhost:8080/api/assistant/audio \
   -H "Authorization: Bearer $TOKEN" \
   -F 'audio=@comando.wav'
+```
 
+### 7) Gerar resposta em voz
+
+```bash
 curl -X POST http://localhost:8080/api/assistant/speak \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"text":"Sua despesa foi registrada."}' \
+  -d '{"text":"Sua despesa foi registrada com sucesso."}' \
   --output resposta.mp3
 ```
 
-A transcrição usa `whisper-1` e a síntese usa `tts-1` da API OpenAI. Limite de upload configurado: 20 MB.
-
-## Endpoints
-
-| Método | Rota | Autenticação | Descrição |
-|---|---|---|---|
-| `POST` | `/api/auth/register` | Pública | Cria conta e retorna JWT |
-| `POST` | `/api/auth/login` | Pública | Autentica e retorna JWT |
-| `POST` | `/api/transactions` | Bearer JWT | Cria transação |
-| `GET` | `/api/transactions?type=...` | Bearer JWT | Lista próprias transações; filtro opcional |
-| `GET` | `/api/transactions/{id}` | Bearer JWT | Busca uma transação própria |
-| `DELETE` | `/api/transactions/{id}` | Bearer JWT | Exclui uma transação própria |
-| `GET` | `/api/transactions/summary` | Bearer JWT | Resumo financeiro próprio |
-| `POST` | `/api/assistant/command` | Bearer JWT | Comando de texto e tool calling |
-| `POST` | `/api/assistant/audio` | Bearer JWT | Transcrição e processamento do comando |
-| `POST` | `/api/assistant/speak` | Bearer JWT | Gera resposta MP3 |
-| `GET` | `/actuator/health` | Pública | Health check para deploy |
-
 ## Testes
+
+Execute os testes de integração com Maven:
 
 ```bash
 mvn test
 ```
 
-Os testes de integração executam o fluxo HTTP completo com H2 isolado e chave OpenAI fictícia: cadastro, login, token inválido, validação, transação e separação dos dados entre usuários. Não é feita chamada externa à OpenAI nos testes.
+Os testes cobrem:
+- cadastro de usuário
+- login com JWT
+- rejeição de token ausente ou inválido
+- criação de transação
+- resumo financeiro
+- validação de valores inválidos
+- isolamento entre usuários
 
 ## Deploy
 
 ### Render
 
-O arquivo `render.yaml` declara o serviço web Docker e um PostgreSQL. No Render, revise o plano disponível para o banco e configure `OPENAI_API_KEY` no painel (marcada como secret/sync false). O `JWT_SECRET` é gerado pelo blueprint. O health check usa `/actuator/health`.
+O repositório inclui o arquivo `render.yaml` para um deploy simples em Render usando Docker. O arquivo define:
+- serviço web da aplicação
+- banco PostgreSQL
+- health check em `/actuator/health`
+
+No painel do Render, configure a variável `OPENAI_API_KEY` como secret e revise os valores do banco. O `JWT_SECRET` também deve ser configurado como variável de ambiente segura.
 
 ### Qualquer plataforma Docker
 
-Construa e execute a imagem com as variáveis `JDBC_DATABASE_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` e, para IA/áudio, `OPENAI_API_KEY`. Use uma instância PostgreSQL gerenciada e TLS em produção. Não exponha a porta do banco publicamente.
+O projeto também contém um `Dockerfile` e um `docker-compose.yml` prontos para subir a aplicação e o banco.
 
-## Limites e próximos passos
+```bash
+docker compose up --build
+```
 
-JWT HS256 usa uma chave compartilhada; para sistemas com múltiplos serviços, considere um provedor OAuth2/OIDC e rotação/gestão de chaves. A API ainda não implementa recuperação de senha, verificação de email, rate limiting nem histórico de conversas. `ddl-auto=update` serve para o exercício; uma evolução de produção deve adicionar migrações versionadas com Flyway ou Liquibase.
+## Observações importantes
+
+- A IA não substitui as regras de negócio: a aplicação continua validando valores, categorias e tipo de transação antes de persisti-los
+- Cada usuário tem dados isolados por autenticação
+- O H2 é usado apenas para testes; o PostgreSQL é a base para execução real
+- Em produção, use segredos reais, rotação de chaves e ambiente seguro
+
+## O que aprendi durante o desafio
+
+- A parte mais importante de um projeto com IA não é somente “chamar o modelo”, mas conectar a IA com regras realmente úteis da aplicação
+- Tool calling é a ponte entre a inteligência artificial e ações reais do sistema
+- Separar autenticação, domínio e serviços deixa o código mais fácil de evoluir
+- Validação e segurança são fundamentais em qualquer integração que manipule dados financeiros
+- Fluxos de áudio e IA exigem atenção adicional para erro, configuração e UX
+
+## Próximos passos possíveis
+
+- dashboard web para resumir despesas por categoria
+- exportação de transações em CSV
+- auditoria e logs de ações do assistente
+- suporte a múltiplos perfis e permissões
+- relatórios mensais e filtros por data
+- melhor UX com IA conversacional mais contextualizada
+
+## Licença
+
+Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
