@@ -1,0 +1,13 @@
+# Build output
+/target/
+*.class
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example

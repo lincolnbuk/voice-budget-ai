@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,12 +24,12 @@ public class AssistantController {
     }
 
     @PostMapping("/command")
-    public AssistantResponse command(@Valid @RequestBody AssistantCommandRequest request) {
+    public AssistantResponse command(@Valid @RequestBody AssistantCommandRequest request, @org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt) {
         return assistant.processCommand(request.text());
     }
 
     @PostMapping(value = "/audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public AssistantResponse audioCommand(@RequestParam("audio") MultipartFile file) {
+    public AssistantResponse audioCommand(@RequestParam("audio") MultipartFile file, @org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt) {
         String text = audio.transcribe(file);
         return assistant.processCommand(text);
     }
@@ -36,9 +37,7 @@ public class AssistantController {
     @PostMapping(value = "/speak", produces = "audio/mpeg")
     public ResponseEntity<byte[]> speak(@Valid @RequestBody AssistantCommandRequest request) {
         byte[] result = audio.speak(request.text());
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=assistant-response.mp3")
-                .contentType(MediaType.parseMediaType("audio/mpeg"))
-                .body(result);
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=assistant-response.mp3")
+                .contentType(MediaType.parseMediaType("audio/mpeg")).body(result);
     }
 }

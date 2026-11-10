@@ -1,0 +1,27 @@
+services:
+  - type: pserv
+    name: orcamento-db
+    plan: basic-256mb
+    databaseName: orcamento
+    user: orcamento
+
+  - type: web
+    name: orcamento-ia-voz
+    runtime: docker
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: JDBC_DATABASE_URL
+        value: jdbc:postgresql://${{orcamento-db.HOST}}:${{orcamento-db.PORT}}/${{orcamento-db.DATABASE}}
+      - key: DB_USERNAME
+        fromDatabase:
+          name: orcamento-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: orcamento-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false

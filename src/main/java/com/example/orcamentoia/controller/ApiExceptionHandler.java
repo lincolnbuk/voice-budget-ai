@@ -2,6 +2,7 @@ package com.example.orcamentoia.controller;
 
 import com.example.orcamentoia.dto.ApiError;
 import com.example.orcamentoia.service.TransactionNotFoundException;
+import com.example.orcamentoia.service.UsernameAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -26,13 +27,18 @@ public class ApiExceptionHandler {
         return response(HttpStatus.NOT_FOUND, exception.getMessage(), Map.of());
     }
 
+    @ExceptionHandler(UsernameAlreadyExistsException.class)
+    public ResponseEntity<ApiError> duplicate(UsernameAlreadyExistsException exception) {
+        return response(HttpStatus.CONFLICT, exception.getMessage(), Map.of());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> badRequest(IllegalArgumentException exception) {
         return response(HttpStatus.BAD_REQUEST, exception.getMessage(), Map.of());
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ApiError> configuration(IllegalStateException exception) {
+    public ResponseEntity<ApiError> unavailable(IllegalStateException exception) {
         return response(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage(), Map.of());
     }
 
