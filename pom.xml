@@ -9,7 +9,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
+    <groupId>com.lincolnbuk.voicebudgetai</groupId>
     <artifactId>voice-budget-ai</artifactId>
     <version>0.2.0</version>
     <name>Voice Budget AI</name>
