@@ -1,27 +1,29 @@
 databases:
-  - name: orcamento-db
+  - name: voice-budget-db
     databaseName: orcamento
     user: orcamento
     plan: basic-256mb
 
 services:
   - type: web
-    name: orcamento-ia-voz
+    name: voice-budget-ai
     runtime: docker
     plan: free
     healthCheckPath: /actuator/health
     envVars:
       - key: JDBC_DATABASE_URL
-        value: jdbc:postgresql://${{orcamento-db.HOST}}:${{orcamento-db.PORT}}/${{orcamento-db.DATABASE}}
+        value: jdbc:postgresql://${{voice-budget-db.HOST}}:${{voice-budget-db.PORT}}/${{voice-budget-db.DATABASE}}
       - key: DB_USERNAME
         fromDatabase:
-          name: orcamento-db
+          name: voice-budget-db
           property: user
       - key: DB_PASSWORD
         fromDatabase:
-          name: orcamento-db
+          name: voice-budget-db
           property: password
       - key: JWT_SECRET
         generateValue: true
+      - key: JWT_ISSUER
+        value: voice-budget-ai
       - key: OPENAI_API_KEY
         sync: false
